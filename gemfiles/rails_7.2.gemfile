@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "active_storage-async_variants", path: "../../active_storage-async_variants"
+gem "active_storage-async_variants", git: "https://github.com/botandrose/active_storage-async_variants.git", branch: "v0.9.0"
 gem "appraisal"
 gem "irb"
 gem "rake", "~> 13.0"

@@ -4,9 +4,11 @@ source "https://rubygems.org"
 
 gemspec
 
-# The plumbing gem lives next door and is unreleased at the split version;
-# resolve it from the sibling checkout rather than rubygems.
-gem "active_storage-async_variants", path: "../active_storage-async_variants"
+# The plumbing gem's split (0.9.0) is unreleased; resolve it from its v0.9.0
+# branch so both local dev and CI build against the UI-free plumbing.
+gem "active_storage-async_variants",
+  git: "https://github.com/botandrose/active_storage-async_variants.git",
+  branch: "v0.9.0"
 
 gem "appraisal"
 gem "irb"
