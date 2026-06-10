@@ -1,0 +1,21 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# Lockfiles (gem, not app)
+Gemfile.lock
+gemfiles/*.gemfile.lock
+
+# rspec failure tracking
+.rspec_status
+
+log/*.log
+
+# Dummy app artifacts
+spec/dummy/log/
+spec/dummy/tmp/
