@@ -97,6 +97,14 @@ module DummySchema
         attachable.variant :thumb_proc,     resize_to_limit: [600, 600], async: true
         attachable.variant :thumb_preview,  resize_to_limit: [101, 101], transformer: FakePreviewTransformer, async: true
       end
+
+      # A video's image preview keeps its variant record on the extracted-frame
+      # blob (the stock preview graph), so the state endpoint must rebuild it as
+      # a Preview rather than a Variant.
+      has_one_attached :video do |attachable|
+        attachable.variant :poster, resize_to_limit: [240, 240], format: :webp,
+          transformer: FakeExternalTransformer, async: true
+      end
     }
   end
 
@@ -144,6 +152,16 @@ def attach_avatar_to(user)
     io: File.open("spec/support/fixtures/image.png"),
     filename: "image.png",
     content_type: "image/png",
+    service_name: "test",
+  )
+end
+
+def attach_video_to(user)
+  user.video.attach(
+    io: File.open("spec/support/fixtures/image.png"),
+    filename: "movie.mp4",
+    content_type: "video/mp4",
+    identify: false,
     service_name: "test",
   )
 end

@@ -56,6 +56,11 @@ module ActiveStorage
           variation_key: variant.variation.key,
           kind:,
           direct:,
+          # Preserve which representation the caller passed: a video's image
+          # preview keeps its variant record on the extracted-frame blob, so the
+          # state endpoint must rebuild it as a Preview (blob.preview), not a
+          # Variant (blob.variant) -- otherwise it reads state off the wrong blob.
+          repr: variant.is_a?(ActiveStorage::Preview) ? "preview" : "variant",
           opts: html_options.slice(*PASS_THROUGH_HTML_OPTIONS),
         )
       end

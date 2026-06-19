@@ -6,12 +6,13 @@ RSpec.describe "async variants: state endpoint and asset serving" do
   describe "StatesController" do
     let(:client) { ActionDispatch::Integration::Session.new(Rails.application) }
 
-    def state_path(variant, kind: "image", direct: "0")
+    def state_path(variant, kind: "image", direct: "0", repr: "variant")
       Rails.application.routes.url_helpers.async_variant_state_path(
         signed_blob_id: variant.blob.signed_id,
         variation_key: variant.variation.key,
         kind: kind,
         direct: direct,
+        repr: repr,
         host: "example.com",
       )
     end
@@ -141,6 +142,46 @@ RSpec.describe "async variants: state endpoint and asset serving" do
 
       expect(client.response.status).to eq(404)
     end
+
+    # A video's image preview keeps its variant record on the extracted-frame
+    # blob, not the source video blob. With repr=preview the endpoint rebuilds a
+    # Preview (blob.preview) so it reads state from the frame; rebuilding a
+    # Variant (blob.variant) would look at the empty source blob and never swap.
+    describe "video preview (frame-blob variant records)" do
+      before { attach_video_to(@user) }
+
+      let(:preview) { @user.video.preview(:poster) }
+
+      def create_frame_record(state:, **attrs)
+        ActiveStorage::AsyncVariants.ensure_preview_image_placeholder!(@user.video.blob)
+        record = create_variant_record(preview.send(:variant), state: state)
+        record.update!(attrs) if attrs.any?
+        record
+      end
+
+      it "reads processing state and progress from the frame blob when repr=preview" do
+        create_frame_record(state: "processing", progress: 42)
+
+        client.get state_path(preview, repr: "preview")
+
+        expect(client.response.body).to include("async-variant-processing")
+        expect(client.response.body).to match(/<progress-bar[^>]*percent="42"/)
+      end
+
+      it "swaps to the processed <img> once the frame variant is processed" do
+        record = create_frame_record(state: "processing")
+        record.image.attach(
+          io: File.open("spec/support/fixtures/image.png"),
+          filename: "poster.webp", content_type: "image/webp", service_name: "test",
+        )
+        record.update!(state: "processed")
+
+        client.get state_path(preview, repr: "preview")
+
+        expect(client.response.body).to include("<img")
+        expect(client.response.body).not_to match(/setTimeout.*reload/)
+      end
+    end
   end
 
   describe "retry" do
@@ -198,7 +239,9 @@ RSpec.describe "async variants: state endpoint and asset serving" do
     end
 
     it "destroys the failed record, re-enqueues processing, and redirects" do
-      variant = @user.avatar.variant(:thumb_proc)
+      # Re-enqueue goes through NamedVariantScan, which only recognizes
+      # transformer-backed variants as async -- so use one with a transformer.
+      variant = @user.avatar.variant(:thumb_external)
       create_variant_record(variant, state: "failed", error: "boom")
 
       expect {
