@@ -201,11 +201,11 @@ RSpec.describe "async variants: state endpoint and asset serving" do
       )
     end
 
-    def retry_path(variant, kind: "image", direct: "0")
+    def retry_path(variant, kind: "image", direct: "0", repr: "variant")
       Rails.application.routes.url_helpers.async_variant_state_retry_path(
         signed_blob_id: variant.blob.signed_id,
         variation_key: variant.variation.key,
-        kind: kind, direct: direct, host: "example.com",
+        kind: kind, direct: direct, repr: repr, host: "example.com",
       )
     end
 
@@ -253,6 +253,21 @@ RSpec.describe "async variants: state endpoint and asset serving" do
 
       record = variant.blob.variant_records.find_by(variation_digest: variant.variation.digest)
       expect(record.state).to eq("pending")
+    end
+
+    it "retries a video preview whose failed record lives on the frame blob" do
+      attach_video_to(@user)
+      preview = @user.video.preview(:poster)
+      ActiveStorage::AsyncVariants.ensure_preview_image_placeholder!(@user.video.blob)
+      failed = create_variant_record(preview.send(:variant), state: "failed", error: "boom")
+
+      expect {
+        client.post retry_path(preview, repr: "preview")
+      }.to have_enqueued_job(ActiveStorage::AsyncVariants::ProcessJob)
+
+      expect(ActiveStorage::VariantRecord.exists?(failed.id)).to be(false)
+      expect(@user.video.preview(:poster).async_record.state).to eq("pending")
+      expect(client.response.headers["Location"]).to include("repr=preview")
     end
   end
 

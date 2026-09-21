@@ -26,11 +26,7 @@ module ActiveStorage
       end
 
       def retry
-        @variant.blob.variant_records.where(
-          variation_digest: @variant.variation.digest,
-          state: "failed",
-        ).destroy_all
-        @variant.enqueue!
+        @variant.retry!
 
         redirect_to Rails.application.routes.url_helpers.async_variant_state_path(
           signed_blob_id: params[:signed_blob_id],
