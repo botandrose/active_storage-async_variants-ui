@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "active_storage-async_variants", ">= 0.9"
+  spec.add_dependency "active_storage-async_variants", ">= 0.10"
   spec.add_dependency "turbo-rails", ">= 2.0"
   spec.add_dependency "isolate_assets", ">= 0.4"
 end

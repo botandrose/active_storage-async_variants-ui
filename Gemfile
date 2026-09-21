@@ -4,10 +4,6 @@ source "https://rubygems.org"
 
 gemspec
 
-# Stock-graph preview support (frame-blob variant records) is unreleased; test
-# against the branch until it ships.
-gem "active_storage-async_variants", github: "botandrose/active_storage-async_variants", branch: "2-stock-preview-structure"
-
 gem "appraisal"
 gem "irb"
 gem "rake", "~> 13.0"
