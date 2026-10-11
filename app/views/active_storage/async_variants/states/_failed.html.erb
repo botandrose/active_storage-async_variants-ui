@@ -16,7 +16,7 @@
     </style>
     <%# In the light DOM so its submit reaches Turbo, and so preventDefault on the
         buttons doesn't also cancel the submit. %>
-    <form action="<%= Rails.application.routes.url_helpers.async_variant_state_retry_path(signed_blob_id:, variation_key:, kind:, direct:, opts: html_options) %>"
+    <form action="<%= Rails.application.routes.url_helpers.async_variant_state_retry_path(signed_blob_id:, variation_key:, kind:, direct:, repr:, opts: html_options) %>"
           method="post"
           id="<%= form_id %>"
           data-turbo-frame="<%= async_variant_frame_id(variant) %>"

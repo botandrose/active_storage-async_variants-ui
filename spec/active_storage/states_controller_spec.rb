@@ -269,6 +269,25 @@ RSpec.describe "async variants: state endpoint and asset serving" do
       expect(@user.video.preview(:poster).async_record.state).to eq("pending")
       expect(client.response.headers["Location"]).to include("repr=preview")
     end
+
+    it "retries a failed video preview through the form its failed state renders" do
+      ActiveStorage::AsyncVariants.retry_visible_if { true }
+      attach_video_to(@user)
+      preview = @user.video.preview(:poster)
+      ActiveStorage::AsyncVariants.ensure_preview_image_placeholder!(@user.video.blob)
+      failed = create_variant_record(preview.send(:variant), state: "failed", error: "boom")
+      client.get Rails.application.routes.url_helpers.async_variant_state_path(
+        signed_blob_id: preview.blob.signed_id, variation_key: preview.variation.key,
+        kind: "image", direct: "0", repr: "preview", host: "example.com",
+      )
+      action = CGI.unescapeHTML(client.response.body[/<form action="([^"]+)"/, 1])
+
+      client.post action
+
+      expect(ActiveStorage::VariantRecord.exists?(failed.id)).to be(false)
+      expect(@user.video.blob.variant_records).to be_empty
+      expect(@user.video.preview(:poster).async_record.state).to eq("pending")
+    end
   end
 
   describe "engine asset serving" do
