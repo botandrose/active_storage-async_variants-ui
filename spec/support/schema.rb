@@ -87,6 +87,19 @@ module DummySchema
 
     Object.const_set :FakePreviewTransformer, CopyTransformer
 
+    # Stands in for ffmpeg: accepts video blobs and "extracts" a fixture frame.
+    Object.const_set :FakePreviewer, Class.new(ActiveStorage::Previewer) {
+      def self.accept?(blob)
+        blob.video?
+      end
+
+      def preview(**options)
+        yield io: File.open("spec/support/fixtures/image.png"),
+          filename: "frame.jpg", content_type: "image/jpeg", **options
+      end
+    }
+    ActiveStorage.previewers = [FakePreviewer]
+
     Object.const_set :User, Class.new(ActiveRecord::Base) {
       has_one_attached :avatar do |attachable|
         attachable.variant :thumb,          resize_to_limit: [100, 100], transformer: ActiveStorage::AsyncVariants::Standard
